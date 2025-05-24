@@ -288,6 +288,14 @@ if(EXISTS ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/priv)
     )
 endif()
 
+if(EXISTS ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/Evolve)
+    file(GLOB evolve_source
+        ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/Evolve/*.c)
+    set(cache_source
+        ${cache_source} ${evolve_source}
+    )
+endif()
+
 if(ENABLE_GLCACHE)
     file(GLOB GLCache_source
         ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/GLCache/*.c)

@@ -1,5 +1,4 @@
 set(sourceC
-        EvolveCache.c
         MRU.c
         Random.c
         RandomTwo.c
@@ -45,6 +44,12 @@ set(sourceC
         CAR.c
 
         RandomLRU.c
+)
+
+set(sourceC 
+        ${sourceC} 
+        Evolve/EvolveCache.c
+        Evolve/EvolveLLM.c
 )
 
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/priv")

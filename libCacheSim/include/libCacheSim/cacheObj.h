@@ -143,6 +143,13 @@ typedef struct {
 
 typedef struct {
   int32_t freq;
+  int32_t last_access_vtime;
+  int32_t next_access_vtime;
+  void *pq_node;
+} EvolveCache_obj_metadata_t;
+
+typedef struct {
+  int32_t freq;
 } __attribute__((packed)) Sieve_obj_params_t;
 
 typedef struct {
@@ -193,6 +200,7 @@ typedef struct cache_obj {
     S3FIFO_obj_metadata_t S3FIFO;
     Sieve_obj_params_t sieve;
     CAR_obj_metadata_t CAR;
+    EvolveCache_obj_metadata_t evolve; // for EvolveCache
 
 #if defined(ENABLE_GLCACHE) && ENABLE_GLCACHE == 1
     GLCache_obj_metadata_t GLCache;
