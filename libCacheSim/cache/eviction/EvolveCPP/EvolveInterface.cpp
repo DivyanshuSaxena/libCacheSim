@@ -133,6 +133,23 @@ static bool EvolveComplete_get(cache_t *cache, const request_t *req) {
  */
 static cache_obj_t *EvolveComplete_find(cache_t *cache, const request_t *req,
                                         const bool update_cache) {
+
+  if (cache->n_req % 10000 == 0) {
+    printf("EvolveComplete_find: n_req = %ld\n", cache->n_req);
+
+    // Print size of the metadata map.
+    EvolveComplete_params_t *params =
+        (EvolveComplete_params_t *)cache->eviction_params;
+    auto *evolve_metadata =
+        static_cast<EvolveComplete *>(params->EvolveComplete_metadata);
+    printf("EvolveComplete_find: metadata map size = %lu\n",
+           evolve_metadata->obj_metadata_map.size());
+
+    // Print the size of the history of evicted objects.
+    printf("EvolveComplete_find: evicted objects history size = %lu\n",
+           evolve_metadata->evicted_obj_metadata.size());
+  }
+
   EvolveComplete_params_t *params =
       (EvolveComplete_params_t *)cache->eviction_params;
   cache_obj_t *cache_obj = cache_find_base(cache, req, update_cache);
@@ -169,6 +186,7 @@ static cache_obj_t *EvolveComplete_insert(cache_t *cache,
 
   // Prepend the object to the head of the queue for fast LRU access.
   prepend_obj_to_head(&params->q_head, &params->q_tail, obj);
+  params->n_obj++;
 
   // Update the metadata of the cache for the inserted object.
   auto *evolve_metadata =
@@ -218,6 +236,7 @@ static void EvolveComplete_evict(cache_t *cache, const request_t *req) {
   evolve_metadata->update_metadata_evict(cache, obj_to_evict);
 
   // Remove the object from the linked list of cached objects.
+  params->n_obj--;
   remove_obj_from_list(&params->q_head, &params->q_tail, obj_to_evict);
   cache_evict_base(cache, obj_to_evict, true);
 }
@@ -248,6 +267,7 @@ static void EvolveComplete_remove_obj(cache_t *cache, cache_obj_t *obj) {
   evolve_metadata->update_metadata_evict(cache, obj);
 
   // Remove the object from the linked list of cached objects.
+  params->n_obj--;
   remove_obj_from_list(&params->q_head, &params->q_tail, obj);
   cache_remove_obj_base(cache, obj, true);
 }

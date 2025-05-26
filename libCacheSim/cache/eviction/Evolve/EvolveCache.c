@@ -161,6 +161,11 @@ static bool EvolveCache_get(cache_t *cache, const request_t *req) {
  */
 static cache_obj_t *EvolveCache_find(cache_t *cache, const request_t *req,
                                      const bool update_cache) {
+
+  if (cache->n_req % 10000 == 0) {
+    printf("EvolveCache_find: n_req = %ld\n", cache->n_req);
+  }
+
   EvolveCache_params_t *params = (EvolveCache_params_t *)cache->eviction_params;
   cache_obj_t *cache_obj = cache_find_base(cache, req, update_cache);
 
