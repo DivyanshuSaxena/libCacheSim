@@ -143,9 +143,6 @@ typedef struct {
 
 typedef struct {
   int32_t freq;
-  int32_t last_access_vtime;
-  int32_t next_access_vtime;
-  void *pq_node;
 } EvolveCache_obj_metadata_t;
 
 typedef struct {
