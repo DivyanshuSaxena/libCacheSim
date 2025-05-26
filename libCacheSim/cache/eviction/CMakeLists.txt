@@ -91,6 +91,13 @@ set(sourceCPP
         LHD/LHD_Interface.cpp
         )
 
+set(sourceCPP
+        ${sourceCPP}
+        EvolveCPP/EvolveComplete.cpp
+        EvolveCPP/EvolveLLM.cpp
+        EvolveCPP/EvolveInterface.cpp
+        )
+
 if (ENABLE_LRB)
     set (sourceCPP ${sourceCPP} 
         LRB/lrb.cpp
