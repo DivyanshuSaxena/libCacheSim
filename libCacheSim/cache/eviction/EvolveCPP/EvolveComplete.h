@@ -17,13 +17,6 @@ class OrderedMultiset : public __gnu_pbds::tree<
     std::less_equal<T>,
     __gnu_pbds::rb_tree_tag,
     __gnu_pbds::tree_order_statistics_node_update> {
-    
-    using Base = __gnu_pbds::tree<
-        T,
-        __gnu_pbds::null_type,
-        std::less_equal<T>,
-        __gnu_pbds::rb_tree_tag,
-        __gnu_pbds::tree_order_statistics_node_update>;
 
 public:
     // Removes one instance of the given value (if present)
