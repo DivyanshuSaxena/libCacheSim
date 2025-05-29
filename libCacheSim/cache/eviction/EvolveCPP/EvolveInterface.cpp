@@ -1,8 +1,3 @@
-//
-//  a module that supports evolution of cache algorithms via LLM calls.
-//  currently implements the simple LRU algorithm.
-//
-
 #include <glib.h>
 
 #include "../../../dataStructure/hashtable/hashtable.h"
@@ -20,7 +15,6 @@ extern "C" {
 // ***********************************************************************
 
 static void EvolveComplete_free(cache_t *cache);
-static bool EvolveComplete_get(cache_t *cache, const request_t *req);
 static cache_obj_t *EvolveComplete_find(cache_t *cache, const request_t *req,
                                         const bool update_cache);
 static cache_obj_t *EvolveComplete_insert(cache_t *cache, const request_t *req);
@@ -50,7 +44,7 @@ cache_t *EvolveComplete_init(const common_cache_params_t ccache_params,
                                      cache_specific_params);
   cache->cache_init = EvolveComplete_init;
   cache->cache_free = EvolveComplete_free;
-  cache->get = EvolveComplete_get;
+  cache->get = cache_get_base;
   cache->find = EvolveComplete_find;
   cache->insert = EvolveComplete_insert;
   cache->evict = EvolveComplete_evict;
@@ -92,28 +86,6 @@ static void EvolveComplete_free(cache_t *cache) {
   cache_struct_free(cache);
 }
 
-/**
- * @brief this function is the user facing API
- * it performs the following logic
- *
- * ```
- * if obj in cache:
- *    update_metadata
- *    return true
- * else:
- *    if cache does not have enough space:
- *        evict until it has space to insert
- *    insert the object
- *    return false
- * ```
- *
- * @param cache
- * @param req
- * @return true if cache hit, false if cache miss
- */
-static bool EvolveComplete_get(cache_t *cache, const request_t *req) {
-  return cache_get_base(cache, req);
-}
 
 // ***********************************************************************
 // ****                                                               ****
