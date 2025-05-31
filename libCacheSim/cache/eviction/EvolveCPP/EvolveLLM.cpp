@@ -10,7 +10,9 @@ cache_obj_t *EvolveComplete_scaffolding(cache_t *cache) {
 
     auto ans = eviction_heuristic(
         params->q_head, params->q_tail, 
-        evolve_metadata->counts, evolve_metadata->addition_vtime_timestamps, evolve_metadata->sizes,
+        evolve_metadata->counts, 
+        AgePercentileView<int64_t>(evolve_metadata->addition_vtime_timestamps, cache->n_req), 
+        evolve_metadata->sizes,
         evolve_metadata->cache_obj_metadata, evolve_metadata->history
     );
 
@@ -19,10 +21,17 @@ cache_obj_t *EvolveComplete_scaffolding(cache_t *cache) {
 }
 
 #ifndef LLM_GENERATED_CODE
+
+template <typename T> using CountsInfo = OrderedMultiset<T>;
+template <typename T> using AgeInfo = AgePercentileView<T>;
+template <typename T> using SizeInfo = OrderedMultiset<T>;
+using CacheObjInfo = EvolveComplete_obj_metadata_t;
+using cache_ptr=cache_obj_t;
+
 cache_obj_t *eviction_heuristic(
-  cache_obj_t* head, cache_obj_t* tail, 
-  OrderedMultiset<int32_t>& counts, OrderedMultiset<int64_t>& addition_vtime_timestamps, OrderedMultiset<int64_t>& sizes,
-  std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>>& cache_obj_metadata,
+  cache_ptr* head, cache_ptr* tail,
+  CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
+  std::unordered_map<obj_id_t, std::shared_ptr<CacheObjInfo>>& cache_obj_metadata,
   History& history
 ) {
     return tail;

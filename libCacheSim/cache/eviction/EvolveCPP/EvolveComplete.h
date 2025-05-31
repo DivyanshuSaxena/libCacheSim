@@ -8,41 +8,7 @@
 #include "../../../dataStructure/hashtable/hashtable.h"
 #include "../../../include/libCacheSim/evictionAlgo.h"
 #include "History.h"
-
-#include <ext/pb_ds/assoc_container.hpp>
-#include <ext/pb_ds/tree_policy.hpp>
-
-
-template <typename T>
-class OrderedMultiset : public __gnu_pbds::tree<
-    T,
-    __gnu_pbds::null_type,
-    std::less_equal<T>,
-    __gnu_pbds::rb_tree_tag,
-    __gnu_pbds::tree_order_statistics_node_update> {
-
-public:
-    // Removes one instance of the given value (if present)
-    bool remove(const T& value) {
-        auto it = this->find(value);
-        if (it != this->end()) {
-            this->erase(it);
-            return true;
-        }
-        return false;
-    }
-
-    // Returns the value at the p-th percentile (e.g. p=0.25 for 25%)
-    T percentile(double p) const {
-        if (this->empty()) {
-            throw std::runtime_error("percentile() called on empty multiset");
-        }
-        p = std::clamp(p, 0.0, 1.0);
-        size_t idx = static_cast<size_t>(p * this->size());
-        if (idx >= this->size()) idx = this->size() - 1;
-        return *this->find_by_order(idx);
-    }
-};
+#include "Percentile.h"
 
 class EvolveComplete_obj_metadata_t {
   public:
@@ -142,7 +108,7 @@ cache_obj_t *EvolveComplete_scaffolding(cache_t *cache);
 // - evicted objects
 cache_obj_t *eviction_heuristic(
   cache_obj_t* head, cache_obj_t* tail, 
-  OrderedMultiset<int32_t>& counts, OrderedMultiset<int64_t>& ages, OrderedMultiset<int64_t>& sizes,
+  OrderedMultiset<int32_t>& counts, AgePercentileView<int64_t> ages, OrderedMultiset<int64_t>& sizes,
   std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>>& cache_obj_metadata,
   History& history
 );
