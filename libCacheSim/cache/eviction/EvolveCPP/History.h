@@ -8,7 +8,7 @@ class History {
     obj_id_t id;
     size_t size;
     int32_t count;
-    int64_t residency;
+    int64_t age_at_eviction_time;
   };
 
   std::list<Entry> fifo;
@@ -17,7 +17,7 @@ class History {
 public:
   History(size_t max_size_bytes) : max_total_size(max_size_bytes) {}
 
-  void insert(obj_id_t id, size_t size, int32_t count, int64_t residency) {
+  void insert(obj_id_t id, size_t size, int32_t count, int64_t age_at_eviction_time) {
     // Remove existing entry if present
     auto it = index.find(id);
     if (it != index.end()) {
@@ -27,7 +27,7 @@ public:
     }
 
     // Insert new entry at the back
-    fifo.push_back({id, size, count, residency});
+    fifo.push_back({id, size, count, age_at_eviction_time});
     index[id] = std::prev(fifo.end());
     current_total_size += size;
 

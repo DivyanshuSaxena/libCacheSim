@@ -1,6 +1,6 @@
 #include "EvolveComplete.h"
 
-cache_obj_t *EvolveComplete_scaffolding(cache_t *cache) {
+cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, int32_t num_candidates) {
     EvolveComplete_params_t *params = (EvolveComplete_params_t *)cache->eviction_params;
     if (params->q_tail == NULL) {
         return NULL;
@@ -8,8 +8,16 @@ cache_obj_t *EvolveComplete_scaffolding(cache_t *cache) {
     
     auto evolve_metadata = static_cast<EvolveComplete *>(((EvolveComplete_params_t *)cache->eviction_params)->EvolveComplete_metadata);
 
+    // Find the tail-num_candidate object in the linked list.
+    int32_t i = 0;
+    cache_obj_t *current = params->q_tail;
+    while (current->queue.prev != NULL && i < num_candidates) {
+        i++;
+        current = current->queue.prev;
+    }
+
     auto ans = eviction_heuristic(
-        params->q_head, params->q_tail, 
+        current, params->q_tail, 
         evolve_metadata->counts, 
         AgePercentileView<int64_t>(evolve_metadata->addition_vtime_timestamps, cache->n_req), 
         evolve_metadata->sizes,

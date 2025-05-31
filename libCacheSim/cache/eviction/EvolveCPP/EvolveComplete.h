@@ -83,11 +83,10 @@ class EvolveComplete {
  * This structure contains the parameters for the EvolveComplete eviction
  * algorithm. It includes a linked list of cache objects, head and tail
  * pointers, and metadata.
+ * 
+ * TODO: Move q_head, q_tail and n_obj into EvolveComplete.
  */
 typedef struct {
-  // Keep all objects in a linked list
-  std::list<cache_obj_t *> q_list;
-
   // Head and tail of the linked list
   cache_obj_t *q_head;
   cache_obj_t *q_tail;
@@ -99,7 +98,7 @@ typedef struct {
 } EvolveComplete_params_t;
 
 
-cache_obj_t *EvolveComplete_scaffolding(cache_t *cache);
+cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, int32_t num_candidates = 100);
 
 // we need to provide this with:
 // - head and tail of the linked list of objects
