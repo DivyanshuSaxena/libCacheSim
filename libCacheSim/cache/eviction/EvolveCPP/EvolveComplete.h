@@ -3,12 +3,15 @@
 #include <list>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
 #include "../../../dataStructure/hashtable/hashtable.h"
 #include "../../../include/libCacheSim/evictionAlgo.h"
+#include "History.h"
 
 #include <ext/pb_ds/assoc_container.hpp>
 #include <ext/pb_ds/tree_policy.hpp>
+
 
 template <typename T>
 class OrderedMultiset : public __gnu_pbds::tree<
@@ -41,52 +44,49 @@ public:
     }
 };
 
+class EvolveComplete_obj_metadata_t {
+  public:
+  int32_t count;              // number of times object accessed
+  int64_t last_access_vtime;  // last vtime object accessed
+
+  // updated once when object is inserted
+  int64_t size;  // bytes
+  int64_t addition_to_cache_vtime;  // vtime of addition to cache
+
+  const size_t num_deltas;    // Number of deltas recorded for the object
+  std::list<int32_t> deltas;  // List of last num_deltas deltas for the object
+
+  EvolveComplete_obj_metadata_t(int32_t c, int64_t l, int64_t s,
+                                int32_t d = 20)
+      : count(c), last_access_vtime(l), size(s), addition_to_cache_vtime(l), num_deltas(d) {
+    deltas = std::list<int32_t>();
+  }
+
+  ~EvolveComplete_obj_metadata_t() { deltas.clear(); }
+
+  void add_delta(int32_t delta) {
+    deltas.push_back(delta);
+    if (deltas.size() > num_deltas) {
+      deltas.pop_front();
+    }
+  }
+};
+
 class EvolveComplete {
  public:
-  class EvolveComplete_obj_metadata_t {
-   public:
-    int32_t count;              // Number of times the object has been accessed
-    int64_t last_access_vtime;  // Last time the object was accessed
+  // OBJECTS IN CACHE: object id -> metadata.
+  std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>> cache_obj_metadata;
+  
+  // recently evicted objects
+  History history;
 
-    // Updated only when the object is inserted.
-    int64_t size;  // Size of the object in bytes
-    int64_t age;   // Age (virtual) of the object in the cache
-
-    const size_t num_deltas;    // Number of deltas recorded for the object
-    std::list<int32_t> deltas;  // List of last num_deltas deltas for the object
-
-    EvolveComplete_obj_metadata_t(int32_t c, int64_t l, int64_t s,
-                                  int32_t d = 20)
-        : count(c), last_access_vtime(l), size(s), age(l), num_deltas(d) {
-      deltas = std::list<int32_t>();
-    }
-
-    ~EvolveComplete_obj_metadata_t() { deltas.clear(); }
-
-    void add_delta(int32_t delta) {
-      deltas.push_back(delta);
-      if (deltas.size() > num_deltas) {
-        deltas.pop_front();  // Keep only the last 20 deltas
-      }
-    }
-  };
-
-  // Keep a hashmap of object id to its metadata.
-  std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>>
-      obj_metadata_map;
-
-  // Keep track of the metadata of recently evicted objects.
-  std::list<std::shared_ptr<EvolveComplete_obj_metadata_t>>
-      evicted_obj_metadata;
-  const size_t history_size;  // Number of evicted objects to keep track of
-
-  // List to store the counts, ages, and size, of all objects in the cache.
+  // store the counts, addition times, and sizes of all objects in the cache.
   OrderedMultiset<int32_t> counts;
-  OrderedMultiset<int64_t> ages;
+  OrderedMultiset<int64_t> addition_vtime_timestamps;
   OrderedMultiset<int64_t> sizes;
 
   // Functions
-  EvolveComplete(int32_t h = 100) : history_size(h) {};
+  EvolveComplete(size_t h = 100) : history(h) {};
   ~EvolveComplete() {}
 
   /**
@@ -132,5 +132,17 @@ typedef struct {
   int32_t n_obj;  // Number of objects in the cache
 } EvolveComplete_params_t;
 
-/* internal function -- LLM generated code should be here */
-cache_obj_t *EvolveComplete_llm(cache_t *cache);
+
+cache_obj_t *EvolveComplete_scaffolding(cache_t *cache);
+
+// we need to provide this with:
+// - head and tail of the linked list of objects
+// - counts, ages, and sizes of the objects in the cache
+// - cache_obj_metadata map
+// - evicted objects
+cache_obj_t *eviction_heuristic(
+  cache_obj_t* head, cache_obj_t* tail, 
+  OrderedMultiset<int32_t>& counts, OrderedMultiset<int64_t>& ages, OrderedMultiset<int64_t>& sizes,
+  std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>>& cache_obj_metadata,
+  History& history
+);

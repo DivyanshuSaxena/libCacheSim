@@ -13,13 +13,10 @@ extern "C" {
 // ****                   function declarations                       ****
 // ****                                                               ****
 // ***********************************************************************
-
 static void EvolveComplete_free(cache_t *cache);
-static cache_obj_t *EvolveComplete_find(cache_t *cache, const request_t *req,
-                                        const bool update_cache);
+static cache_obj_t *EvolveComplete_find(cache_t *cache, const request_t *req, const bool update_cache);
 static cache_obj_t *EvolveComplete_insert(cache_t *cache, const request_t *req);
-static cache_obj_t *EvolveComplete_to_evict(cache_t *cache,
-                                            const request_t *req);
+static cache_obj_t *EvolveComplete_to_evict(cache_t *cache, const request_t *req);
 static void EvolveComplete_evict(cache_t *cache, const request_t *req);
 static bool EvolveComplete_remove(cache_t *cache, const obj_id_t obj_id);
 static void EvolveComplete_print_cache(const cache_t *cache);
@@ -66,7 +63,7 @@ cache_t *EvolveComplete_init(const common_cache_params_t ccache_params,
   params->n_obj = 0;
   params->q_head = NULL;
   params->q_tail = NULL;
-  params->EvolveComplete_metadata = static_cast<void *>(new EvolveComplete());
+  params->EvolveComplete_metadata = static_cast<void *>(new EvolveComplete(ccache_params.cache_size));
 
   cache->eviction_params = params;
 
@@ -176,7 +173,7 @@ static cache_obj_t *EvolveComplete_to_evict(cache_t *cache,
  */
 static void EvolveComplete_evict(cache_t *cache, const request_t *req) {
   // Make the eviction LLM call.
-  cache_obj_t *obj_to_evict = EvolveComplete_llm(cache);
+  cache_obj_t *obj_to_evict = EvolveComplete_scaffolding(cache);
   if (obj_to_evict == NULL) {
     // If the LLM call returns NULL, we cannot evict anything.
     return;
