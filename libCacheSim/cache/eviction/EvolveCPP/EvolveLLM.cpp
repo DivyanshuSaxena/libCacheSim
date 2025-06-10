@@ -39,44 +39,44 @@ template <typename T> using SizeInfo = OrderedMultiset<T>;
 #ifdef LLM_GENERATED_CODE
     #include "LLMCode.h"
 #else
-    // /**************** LRU ****************/ 
-    // cache_ptr eviction_heuristic(
-    //   cache_ptr head, cache_ptr tail, uint64_t current_time,
-    //   CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-    //   History& history
-    // ) { 
-    //     return tail;
-    // }
+// /**************** LRU ****************/ 
+// cache_ptr eviction_heuristic(
+//     cache_ptr head, cache_ptr tail, uint64_t current_time,
+//     CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
+//     History& history
+// ) { 
+//     return tail;
+// }
 
-    /**************** FIFO ****************/
-    // cache_ptr eviction_heuristic(
-    //   cache_ptr head, cache_ptr tail, uint64_t current_time,
-    //   CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-    //   History& history
-    // ) {    
-    //     cache_ptr eviction_candidate = head;
+// /**************** FIFO ****************/
+// cache_ptr eviction_heuristic(
+//     cache_ptr head, cache_ptr tail, uint64_t current_time,
+//     CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
+//     History& history
+// ) {    
+//     cache_ptr eviction_candidate = head;
 
-    //     for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
-    //         if (curr.added_at() < eviction_candidate.added_at() ) {
-    //             eviction_candidate = curr;
-    //         }
-    //     }
-    //     return eviction_candidate;
-    // }
+//     for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
+//         if (curr.added_at() < eviction_candidate.added_at() ) {
+//             eviction_candidate = curr;
+//         }
+//     }
+//     return eviction_candidate;
+// }
 
-    /**************** LFU ****************/
-    cache_ptr eviction_heuristic(
-    cache_ptr head, cache_ptr tail, uint64_t current_time,
-    CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-    History& history
-    ) {    
-        cache_ptr eviction_candidate = head;
+/**************** LFU ****************/
+cache_ptr eviction_heuristic(
+cache_ptr head, cache_ptr tail, uint64_t current_time,
+CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
+History& history
+) {    
+    cache_ptr eviction_candidate = head;
 
-        for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
-            if (curr.count() < eviction_candidate.count() ) {
-                eviction_candidate = curr;
-            }
+    for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
+        if (curr.count() < eviction_candidate.count() ) {
+            eviction_candidate = curr;
         }
-        return eviction_candidate;
     }
+    return eviction_candidate;
+}
 #endif

@@ -128,6 +128,7 @@ public:
     bool operator!=(std::nullptr_t)       const { return obj != nullptr; }
 
     /* handy shorthands */
+    obj_id_t id() const { return obj->obj_id; }
     int32_t count() const        { return meta().count; }
     int64_t last_access() const  { return meta().last_access_vtime; }
     int64_t size() const         { return meta().size; }
