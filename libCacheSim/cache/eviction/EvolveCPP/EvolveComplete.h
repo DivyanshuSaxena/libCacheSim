@@ -98,16 +98,55 @@ typedef struct {
 } EvolveComplete_params_t;
 
 
-cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, int32_t num_candidates = 100);
+class cache_ptr {
+public:
+    cache_obj_t* obj;
+    const std::unordered_map<obj_id_t,
+          std::shared_ptr<EvolveComplete_obj_metadata_t>>* map;   // only the map ref
+
+    cache_ptr() : obj(nullptr), map(nullptr) {}
+    cache_ptr(cache_obj_t* o,
+              const std::unordered_map<obj_id_t,
+                    std::shared_ptr<EvolveComplete_obj_metadata_t>>& m)
+        : obj(o), map(&m) {}
+
+    /* navigation */
+    cache_ptr next() const { return cache_ptr(obj ? obj->queue.next : nullptr, *map); }
+    cache_ptr prev() const { return cache_ptr(obj ? obj->queue.prev : nullptr, *map); }
+
+    /* metadata access – fetched lazily */
+    const EvolveComplete_obj_metadata_t& meta() const {
+        return *map->at(obj->obj_id);
+    }
+
+    /* comparators */
+    bool operator==(const cache_ptr& other) const { return obj == other.obj; }
+    bool operator!=(const cache_ptr& other) const { return obj != other.obj; }
+
+    /* nullptr equality */
+    bool operator==(std::nullptr_t)       const { return obj == nullptr; }
+    bool operator!=(std::nullptr_t)       const { return obj != nullptr; }
+
+    /* handy shorthands */
+    int32_t count() const        { return meta().count; }
+    int64_t last_access() const  { return meta().last_access_vtime; }
+    int64_t size() const         { return meta().size; }
+    int64_t added_at() const     { return meta().addition_to_cache_vtime; }
+
+    bool         is_null() const { return obj == nullptr; }
+    cache_obj_t* raw()     const { return obj; }
+};
+
+
+cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, const request_t *req, int32_t num_candidates = 100);
 
 // we need to provide this with:
 // - head and tail of the linked list of objects
 // - counts, ages, and sizes of the objects in the cache
 // - cache_obj_metadata map
 // - evicted objects
-cache_obj_t *eviction_heuristic(
-  cache_obj_t* head, cache_obj_t* tail, 
+cache_ptr eviction_heuristic(
+  cache_ptr head, cache_ptr tail, uint64_t current_time, 
   OrderedMultiset<int32_t>& counts, AgePercentileView<int64_t> ages, OrderedMultiset<int64_t>& sizes,
-  std::unordered_map<obj_id_t, std::shared_ptr<EvolveComplete_obj_metadata_t>>& cache_obj_metadata,
   History& history
 );
