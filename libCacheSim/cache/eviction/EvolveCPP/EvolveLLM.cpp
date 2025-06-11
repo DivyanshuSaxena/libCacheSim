@@ -15,8 +15,8 @@ cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, const request_t *req, in
         current = current->queue.prev;
     }
 
-    auto head_ptr = cache_ptr(current, evolve_metadata->cache_obj_metadata);
-    auto tail_ptr = cache_ptr(params->q_tail, evolve_metadata->cache_obj_metadata);
+    auto head_ptr = cache_ptr(current, evolve_metadata->cache_obj_metadata, current, params->q_tail);
+    auto tail_ptr = cache_ptr(params->q_tail, evolve_metadata->cache_obj_metadata, current, params->q_tail);
 
     auto ans = eviction_heuristic(
         head_ptr, tail_ptr, req->n_req,

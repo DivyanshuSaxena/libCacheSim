@@ -103,16 +103,28 @@ public:
     cache_obj_t* obj;
     const std::unordered_map<obj_id_t,
           std::shared_ptr<EvolveComplete_obj_metadata_t>>* map;   // only the map ref
+    
+    // we will use this head and tail for bounds checks
+    cache_obj_t* head;
+    cache_obj_t* tail; 
 
-    cache_ptr() : obj(nullptr), map(nullptr) {}
+    cache_ptr() : obj(nullptr), map(nullptr), head(nullptr), tail(nullptr) {}
+    cache_ptr(std::nullptr_t) : obj(nullptr), map(nullptr), head(nullptr), tail(nullptr) {}
     cache_ptr(cache_obj_t* o,
               const std::unordered_map<obj_id_t,
-                    std::shared_ptr<EvolveComplete_obj_metadata_t>>& m)
-        : obj(o), map(&m) {}
+                    std::shared_ptr<EvolveComplete_obj_metadata_t>>& m, cache_obj_t* h, cache_obj_t* t)
+        : obj(o), map(&m), head(h), tail(t)  {}
 
     /* navigation */
-    cache_ptr next() const { return cache_ptr(obj ? obj->queue.next : nullptr, *map); }
-    cache_ptr prev() const { return cache_ptr(obj ? obj->queue.prev : nullptr, *map); }
+    cache_ptr next() const {
+      if(obj == nullptr || obj == tail ) return cache_ptr(nullptr); 
+      else return cache_ptr(obj->queue.next, *map, head, tail); 
+    }
+
+    cache_ptr prev() const { 
+      if(obj == nullptr || obj == head) return cache_ptr(nullptr); 
+      else return cache_ptr(obj->queue.prev, *map, head, tail);
+    }
 
     /* metadata access – fetched lazily */
     const EvolveComplete_obj_metadata_t& meta() const {
@@ -126,6 +138,9 @@ public:
     /* nullptr equality */
     bool operator==(std::nullptr_t)       const { return obj == nullptr; }
     bool operator!=(std::nullptr_t)       const { return obj != nullptr; }
+
+    // raw pointers convert to: True (when not-null) and False (when null)
+    explicit operator bool() const { return obj != nullptr; }
 
     /* handy shorthands */
     obj_id_t id() const { return obj->obj_id; }
