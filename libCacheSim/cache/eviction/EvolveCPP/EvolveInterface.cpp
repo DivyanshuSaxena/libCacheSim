@@ -173,6 +173,7 @@ static cache_obj_t *EvolveComplete_to_evict(cache_t *cache,
  */
 static void EvolveComplete_evict(cache_t *cache, const request_t *req) {
   // Make the eviction LLM call.
+  
   cache_obj_t *obj_to_evict = EvolveComplete_scaffolding(cache, req);
   if (obj_to_evict == NULL) {
     // If the LLM call returns NULL, we cannot evict anything.
