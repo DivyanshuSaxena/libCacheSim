@@ -27,3 +27,8 @@ libCacheSim/cache/eviction/EvolveCPP/LLMCode.h
 
 # data files
 *.zst
+*.csv
+*.txt
+*.vscsi
+*.bin
+*.tar.gz
