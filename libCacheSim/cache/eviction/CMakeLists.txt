@@ -98,6 +98,12 @@ set(sourceCPP
         EvolveCPP/EvolveInterface.cpp
         )
 
+set(sourceCPP
+        ${sourceCPP}
+        PQEvolve/PQEvolve.cpp
+        PQEvolve/PQEvolveInterface.cpp
+)
+
 if (ENABLE_LRB)
     set (sourceCPP ${sourceCPP} 
         LRB/lrb.cpp

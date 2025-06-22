@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.12)
 project(libCacheSim)
+
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO}   -O3")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -O3")
+
 set(DESCRIPTION "a high performance cache simulation library")
 set(PROJECT_WEB "http://cachesim.com")
 
@@ -262,6 +268,7 @@ file(GLOB cache_source
 
     ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/LHD/*
     ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/EvolveCPP/*
+    ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/PQEvolve/*
     ${PROJECT_SOURCE_DIR}/libCacheSim/cache/eviction/cpp/*
 )
 
