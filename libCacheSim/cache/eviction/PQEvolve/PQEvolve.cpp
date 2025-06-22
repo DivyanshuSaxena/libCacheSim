@@ -1,11 +1,18 @@
-#include "PQEvolve.h"
-
 #include <algorithm>
 #include <list>
 
-int priority(pq_cache_obj_info& info){
-  return -1 * info.size;
-}
+#include "PQEvolve.h"
+
+#ifdef LLM_GENERATED_CODE
+  #include "LLMCode.h"
+#else
+  int priority(pq_cache_obj_info& obj_info){
+    return obj_info.last_access_vtime; // LRU
+    // return -1 * obj_info.last_access_vtime; // MRU
+    // return obj_info.addition_to_cache_vtime; // FIFO
+    // return obj_info.count; // approximately LFU (not sure what baseline LFU does if there are multiple objects of same size)
+  }
+#endif
 
 void PQEvolveData::update_metadata_access(const cache_t *cache,
                                             cache_obj_t *obj) {
