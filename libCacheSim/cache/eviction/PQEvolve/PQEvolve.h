@@ -95,6 +95,7 @@ class PQEvolveData {
   // function definitions
   PQEvolveData(size_t h = 100) : history(h) {};
   ~PQEvolveData() {}
+  int priority_wrapper(const cache_t *cache, pq_cache_obj_info& obj_info);
   void update_metadata_access(const cache_t *cache, cache_obj_t *obj);
   void update_metadata_insert(const cache_t *cache, cache_obj_t *obj);
   void update_metadata_evict(const cache_t *cache, cache_obj_t *obj);
