@@ -39,7 +39,7 @@ public:
       fifo.pop_front();
     }
   }
-
+    
   bool contains(obj_id_t id) const {
     return index.count(id) > 0;
   }

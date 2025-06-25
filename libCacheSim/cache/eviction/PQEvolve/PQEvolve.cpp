@@ -12,7 +12,7 @@ template <typename T> using SizeInfo = OrderedMultiset<T>;
   #include "LLMCode.h"
 #else
   int priority(
-    uint64_t current_time, pq_cache_obj_info& obj_info, 
+    uint64_t current_time, obj_id_t obj_id, pq_cache_obj_info& obj_info, 
     CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
     History& history
   ){
@@ -24,9 +24,9 @@ template <typename T> using SizeInfo = OrderedMultiset<T>;
   }
 #endif
 
-int PQEvolveData::priority_wrapper(const cache_t *cache, pq_cache_obj_info& obj_info){
+int PQEvolveData::priority_wrapper(const cache_t *cache, obj_id_t obj_id, pq_cache_obj_info& obj_info){
   return priority(
-    cache->n_req, obj_info, 
+    cache->n_req, obj_id, obj_info, 
     this->counts, 
     AgePercentileView<int64_t>(this->addition_vtime_timestamps, cache->n_req),
     this->sizes,
@@ -63,7 +63,7 @@ void PQEvolveData::update_metadata_access(const cache_t *cache,
   this->counts.remove(prev_count);
 
   // update the priority queue
-  int prio = priority_wrapper(cache, *obj_metadata_ptr);
+  int prio = priority_wrapper(cache, obj->obj_id, *obj_metadata_ptr);
   this->pq.insert_or_update(obj, prio);
 }
 
@@ -79,7 +79,7 @@ void PQEvolveData::update_metadata_insert(const cache_t *cache, cache_obj_t *obj
   this->sizes.insert(new_obj_metadata->size);
 
   // update priority queue
-  int prio = priority_wrapper(cache, *new_obj_metadata);
+  int prio = priority_wrapper(cache, obj->obj_id, *new_obj_metadata);
   this->pq.insert_or_update(obj, prio);
 }
 
