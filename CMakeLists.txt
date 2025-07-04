@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.12)
 project(libCacheSim)
 
+option(LLM_GENERATED_CODE "Enable LLM-generated-code flag" OFF)
+option(SIMULATE_MAX_REQUESTS "Max requests to simulate" "")
+
+if(LLM_GENERATED_CODE)
+  add_compile_definitions(LLM_GENERATED_CODE)   # -DLLM_GENERATED_CODE for all C/C++
+endif()
+
+if(SIMULATE_MAX_REQUESTS)
+  add_compile_definitions(SIMULATE_MAX_REQUESTS=${SIMULATE_MAX_REQUESTS})
+endif()
+
+
 set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} -O3")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO   "${CMAKE_C_FLAGS_RELWITHDEBINFO}   -O3")
@@ -395,3 +407,4 @@ if(ENABLE_TESTS)
 else()
     message(STATUS "Building without test")
 endif()
+
