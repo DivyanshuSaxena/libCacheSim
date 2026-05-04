@@ -2,6 +2,7 @@
 
 #include <list>
 #include <memory>
+#include <vector>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -95,6 +96,7 @@ typedef struct {
   void *EvolveComplete_metadata;
 
   int32_t n_obj;  // Number of objects in the cache
+  bool promote_on_access;  // true = LRU ordering, false = FIFO ordering
 } EvolveComplete_params_t;
 
 
@@ -154,15 +156,23 @@ public:
 };
 
 
-cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, const request_t *req, int32_t num_candidates = 100);
+struct CandidateInfo {
+    obj_id_t id;
+    int32_t count;
+    int64_t last_access_vtime;
+    int64_t size;
+    int64_t added_at;
+};
 
-// we need to provide this with:
-// - head and tail of the linked list of objects
-// - counts, ages, and sizes of the objects in the cache
-// - cache_obj_metadata map
-// - evicted objects
-cache_ptr eviction_heuristic(
-  cache_ptr head, cache_ptr tail, uint64_t current_time, 
-  OrderedMultiset<int32_t>& counts, AgePercentileView<int64_t> ages, OrderedMultiset<int64_t>& sizes,
+template <typename T> using CountsInfo = OrderedMultiset<T>;
+template <typename T> using AgeInfo = AgePercentileView<T>;
+template <typename T> using SizeInfo = OrderedMultiset<T>;
+
+cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, const request_t *req, int32_t num_candidates = 8);
+
+int select_victim(
+  const std::vector<CandidateInfo>& candidates,
+  uint64_t current_time,
+  CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
   History& history
 );

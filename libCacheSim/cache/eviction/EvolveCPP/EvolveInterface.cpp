@@ -63,7 +63,14 @@ cache_t *EvolveComplete_init(const common_cache_params_t ccache_params,
   params->n_obj = 0;
   params->q_head = NULL;
   params->q_tail = NULL;
+  params->promote_on_access = true;
   params->EvolveComplete_metadata = static_cast<void *>(new EvolveComplete(ccache_params.cache_size));
+
+  if (cache_specific_params != NULL) {
+    if (strstr(cache_specific_params, "promote=0") != NULL) {
+      params->promote_on_access = false;
+    }
+  }
 
   cache->eviction_params = params;
 
@@ -112,9 +119,9 @@ static cache_obj_t *EvolveComplete_find(cache_t *cache, const request_t *req,
         static_cast<EvolveComplete *>(params->EvolveComplete_metadata);
     evolve_metadata->update_metadata_access(cache, cache_obj);
 
-    // For LRU --> move the object to the head of the queue
-    // Makes LRU-type accesses faster.
-    move_obj_to_head(&params->q_head, &params->q_tail, cache_obj);
+    if (params->promote_on_access) {
+      move_obj_to_head(&params->q_head, &params->q_tail, cache_obj);
+    }
   }
   return cache_obj;
 }

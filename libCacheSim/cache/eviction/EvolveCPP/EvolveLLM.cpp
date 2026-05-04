@@ -1,83 +1,52 @@
 #include "EvolveComplete.h"
-#include <iostream> 
+#include <iostream>
+#include <algorithm>
+
+#include "LLMCode.h"
 
 cache_obj_t *EvolveComplete_scaffolding(cache_t *cache, const request_t *req, int32_t num_candidates) {
     EvolveComplete_params_t *params = (EvolveComplete_params_t *)cache->eviction_params;
     if (params->q_tail == NULL) return NULL;
-    
-    auto evolve_metadata = static_cast<EvolveComplete *>(((EvolveComplete_params_t *)cache->eviction_params)->EvolveComplete_metadata);
 
-    // Find the tail-num_candidate object in the linked list.
-    int32_t i = 0;
+    auto evolve_metadata = static_cast<EvolveComplete *>(params->EvolveComplete_metadata);
+
+    // Walk backward from tail to collect num_candidates objects
+    std::vector<cache_obj_t*> raw_candidates;
     cache_obj_t *current = params->q_tail;
-    while (current->queue.prev != NULL && i < num_candidates) {
-        i++;
+    while (current != NULL && (int32_t)raw_candidates.size() < num_candidates) {
+        raw_candidates.push_back(current);
         current = current->queue.prev;
     }
 
-    auto head_ptr = cache_ptr(current, evolve_metadata->cache_obj_metadata, current, params->q_tail);
-    auto tail_ptr = cache_ptr(params->q_tail, evolve_metadata->cache_obj_metadata, current, params->q_tail);
+    // Build CandidateInfo vector from collected objects
+    std::vector<CandidateInfo> candidates;
+    candidates.reserve(raw_candidates.size());
+    for (auto *obj : raw_candidates) {
+        auto it = evolve_metadata->cache_obj_metadata.find(obj->obj_id);
+        if (it != evolve_metadata->cache_obj_metadata.end()) {
+            auto &meta = *(it->second);
+            candidates.push_back({
+                obj->obj_id,
+                meta.count,
+                meta.last_access_vtime,
+                meta.size,
+                meta.addition_to_cache_vtime
+            });
+        }
+    }
 
-    auto ans = eviction_heuristic(
-        head_ptr, tail_ptr, req->n_req,
-        evolve_metadata->counts, 
-        AgePercentileView<int64_t>(evolve_metadata->addition_vtime_timestamps, cache->n_req), 
+    if (candidates.empty()) return params->q_tail;
+
+    int idx = select_victim(
+        candidates, req->n_req,
+        evolve_metadata->counts,
+        AgePercentileView<int64_t>(evolve_metadata->addition_vtime_timestamps, cache->n_req),
         evolve_metadata->sizes,
         evolve_metadata->history
     );
-    cache_obj_t* eviction_decision = ans.obj;
-    
-    assert (eviction_decision != nullptr);
-    assert(evolve_metadata->cache_obj_metadata.count(eviction_decision->obj_id) > 0);
-    return eviction_decision;
+
+    // Clamp index to valid range
+    idx = std::max(0, std::min(idx, (int)candidates.size() - 1));
+
+    return raw_candidates[idx];
 }
-
-template <typename T> using CountsInfo = OrderedMultiset<T>;
-template <typename T> using AgeInfo = AgePercentileView<T>;
-template <typename T> using SizeInfo = OrderedMultiset<T>;
-
-#ifdef LLM_GENERATED_CODE
-    #include "LLMCode.h"
-#else
-// /**************** LRU ****************/ 
-// cache_ptr eviction_heuristic(
-//     cache_ptr head, cache_ptr tail, uint64_t current_time,
-//     CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-//     History& history
-// ) { 
-//     return tail;
-// }
-
-// /**************** FIFO ****************/
-// cache_ptr eviction_heuristic(
-//     cache_ptr head, cache_ptr tail, uint64_t current_time,
-//     CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-//     History& history
-// ) {    
-//     cache_ptr eviction_candidate = head;
-
-//     for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
-//         if (curr.added_at() < eviction_candidate.added_at() ) {
-//             eviction_candidate = curr;
-//         }
-//     }
-//     return eviction_candidate;
-// }
-
-/**************** LFU ****************/
-cache_ptr eviction_heuristic(
-cache_ptr head, cache_ptr tail, uint64_t current_time,
-CountsInfo<int32_t>& counts, AgeInfo<int64_t> ages, SizeInfo<int64_t>& sizes,
-History& history
-) {    
-    assert(false); // this should not be used - use PQ impl instead.
-    cache_ptr eviction_candidate = head;
-
-    for (cache_ptr curr = head; curr != nullptr; curr = curr.next()) {
-        if (curr.count() < eviction_candidate.count() ) {
-            eviction_candidate = curr;
-        }
-    }
-    return eviction_candidate;
-}
-#endif
