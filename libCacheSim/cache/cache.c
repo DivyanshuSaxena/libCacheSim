@@ -156,7 +156,8 @@ bool cache_can_insert_default(cache_t *cache, const request_t *req) {
     }
   }
 
-  if (req->obj_size + cache->obj_md_size > cache->cache_size) {
+  if (req->obj_size + cache->obj_md_size + cache->cache_md_size >
+      cache->cache_size) {
     WARN_ONCE("%ld req, obj %lu, size %lu larger than cache size %lu\n",
               (long)cache->n_req, (unsigned long)req->obj_id,
               (unsigned long)req->obj_size, (unsigned long)cache->cache_size);
@@ -248,8 +249,8 @@ bool cache_get_base(cache_t *cache, const request_t *req) {
     VERBOSE("req %ld, obj %ld --- cache miss cannot insert\n", cache->n_req,
             req->obj_id);
   } else {
-    while (cache->get_occupied_byte(cache) + req->obj_size +
-               cache->obj_md_size >
+    while (cache->get_occupied_byte(cache) + cache_get_extra_md_byte(cache) +
+               req->obj_size + cache->obj_md_size >
            cache->cache_size) {
       cache->evict(cache, req);
     }

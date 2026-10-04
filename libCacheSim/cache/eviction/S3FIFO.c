@@ -70,6 +70,7 @@ static bool S3FIFO_remove(cache_t *cache, obj_id_t obj_id);
 static inline int64_t S3FIFO_get_occupied_byte(const cache_t *cache);
 static inline int64_t S3FIFO_get_n_obj(const cache_t *cache);
 static inline bool S3FIFO_can_insert(cache_t *cache, const request_t *req);
+static inline void S3FIFO_update_n_ghost(cache_t *cache);
 static void S3FIFO_parse_params(cache_t *cache,
                                 const char *cache_specific_params);
 
@@ -141,6 +142,17 @@ cache_t *S3FIFO_init(const common_cache_params_t ccache_params,
 
   ccache_params_local.cache_size = main_fifo_size;
   params->main_fifo = FIFO_init(ccache_params_local, NULL);
+
+  if (ccache_params.consider_obj_metadata) {
+    // two pointer + 2-bit freq; the small and main FIFOs hold the residents
+    cache->obj_md_size = 8 * 2 + 1;
+    params->small_fifo->obj_md_size = cache->obj_md_size;
+    params->main_fifo->obj_md_size = cache->obj_md_size;
+    cache->cache_md_size = sizeof(S3FIFO_params_t);
+    // obj_id + two pointer; ghosts are charged here, not in the ghost FIFO
+    cache->ghost_md_size = 8 + 8 * 2;
+    if (params->ghost_fifo != NULL) params->ghost_fifo->obj_md_size = 0;
+  }
 
   snprintf(cache->cache_name, CACHE_NAME_ARRAY_LEN, "S3FIFO-%.4lf-%d",
            params->small_size_ratio, params->move_to_main_threshold);
@@ -239,6 +251,7 @@ static cache_obj_t *S3FIFO_find(cache_t *cache, const request_t *req,
       params->ghost_fifo->remove(params->ghost_fifo, req->obj_id)) {
     // if object in ghost_fifo, remove will return true
     params->hit_on_ghost = true;
+    S3FIFO_update_n_ghost(cache);
   }
 
   obj = params->main_fifo->find(params->main_fifo, req, true);
@@ -382,11 +395,22 @@ static void S3FIFO_evict(cache_t *cache, const request_t *req) {
   cache_t *small_fifo = params->small_fifo;
   cache_t *main_fifo = params->main_fifo;
 
+  if (small_fifo->get_occupied_byte(small_fifo) == 0 &&
+      main_fifo->get_occupied_byte(main_fifo) == 0) {
+    // nothing resident: only ghost metadata is over budget
+    if (params->ghost_fifo != NULL) {
+      params->ghost_fifo->evict(params->ghost_fifo, req);
+      S3FIFO_update_n_ghost(cache);
+    }
+    return;
+  }
+
   if (main_fifo->get_occupied_byte(main_fifo) > main_fifo->cache_size ||
       small_fifo->get_occupied_byte(small_fifo) == 0) {
     S3FIFO_evict_main(cache, req);
   } else {
     S3FIFO_evict_small(cache, req);
+    S3FIFO_update_n_ghost(cache);
   }
 }
 
@@ -410,6 +434,7 @@ static bool S3FIFO_remove(cache_t *cache, obj_id_t obj_id) {
   removed = removed || (params->ghost_fifo &&
                         params->ghost_fifo->remove(params->ghost_fifo, obj_id));
   removed = removed || params->main_fifo->remove(params->main_fifo, obj_id);
+  S3FIFO_update_n_ghost(cache);
 
   return removed;
 }
@@ -418,6 +443,12 @@ static inline int64_t S3FIFO_get_occupied_byte(const cache_t *cache) {
   S3FIFO_params_t *params = (S3FIFO_params_t *)cache->eviction_params;
   return params->small_fifo->get_occupied_byte(params->small_fifo) +
          params->main_fifo->get_occupied_byte(params->main_fifo);
+}
+
+static inline void S3FIFO_update_n_ghost(cache_t *cache) {
+  S3FIFO_params_t *params = (S3FIFO_params_t *)cache->eviction_params;
+  cache->n_ghost =
+      params->ghost_fifo ? params->ghost_fifo->get_n_obj(params->ghost_fifo) : 0;
 }
 
 static inline int64_t S3FIFO_get_n_obj(const cache_t *cache) {

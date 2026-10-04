@@ -61,7 +61,12 @@ cache_t *FIFO_init(const common_cache_params_t ccache_params,
   cache->get_occupied_byte = cache_get_occupied_byte_default;
   cache->get_n_obj = cache_get_n_obj_default;
   cache->can_insert = cache_can_insert_default;
-  cache->obj_md_size = 0;
+  if (ccache_params.consider_obj_metadata) {
+    // two pointer
+    cache->obj_md_size = 8 * 2;
+  } else {
+    cache->obj_md_size = 0;
+  }
 
   cache->eviction_params = malloc(sizeof(FIFO_params_t));
   FIFO_params_t *params = (FIFO_params_t *)cache->eviction_params;

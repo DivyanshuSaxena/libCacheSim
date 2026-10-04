@@ -138,6 +138,11 @@ struct cache {
   int64_t cache_size;
   int64_t default_ttl;
   int32_t obj_md_size;
+  // set by the algorithm when consider_obj_metadata is on, charged against
+  // cache_size by cache_get_base along with obj_md_size per object
+  int64_t cache_md_size;  // fixed per-cache metadata
+  int32_t ghost_md_size;  // per ghost (history-only) entry
+  int64_t n_ghost;        // ghost entries held now, kept current by the algorithm
 
   /* cache stat is not updated automatically, it is popped up only in
    * some situations */
@@ -270,6 +275,11 @@ void cache_evict_base(cache_t *cache, cache_obj_t *obj,
  *
  * @param cache
  */
+/** metadata not covered by obj_md_size: per-cache plus ghost entries */
+static inline int64_t cache_get_extra_md_byte(const cache_t *cache) {
+  return cache->cache_md_size + cache->n_ghost * cache->ghost_md_size;
+}
+
 static inline int64_t cache_get_occupied_byte_default(const cache_t *cache) {
   return cache->occupied_byte;
 }
