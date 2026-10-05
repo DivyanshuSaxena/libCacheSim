@@ -66,8 +66,8 @@ cache_t *GDSF_init(const common_cache_params_t ccache_params,
   cache->remove = GDSF_remove;
 
   if (ccache_params.consider_obj_metadata) {
-    // freq + priority
-    cache->obj_md_size = 8;
+    // priority (float) + heap position + freq
+    cache->obj_md_size = 4 + 8 + 4;
   } else {
     cache->obj_md_size = 0;
   }

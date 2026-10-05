@@ -144,13 +144,14 @@ cache_t *S3FIFO_init(const common_cache_params_t ccache_params,
   params->main_fifo = FIFO_init(ccache_params_local, NULL);
 
   if (ccache_params.consider_obj_metadata) {
-    // two pointer + 2-bit freq; the small and main FIFOs hold the residents
-    cache->obj_md_size = 8 * 2 + 1;
+    // ring-buffer slot + 2-bit freq; the small and main FIFOs hold the residents
+    cache->obj_md_size = 8 + 1;
     params->small_fifo->obj_md_size = cache->obj_md_size;
     params->main_fifo->obj_md_size = cache->obj_md_size;
     cache->cache_md_size = sizeof(S3FIFO_params_t);
-    // obj_id + two pointer; ghosts are charged here, not in the ghost FIFO
-    cache->ghost_md_size = 8 + 8 * 2;
+    // exact 8 B id in a ring (the simulator matches full ids); charged here, not in
+    // the ghost FIFO
+    cache->ghost_md_size = 8;
     if (params->ghost_fifo != NULL) params->ghost_fifo->obj_md_size = 0;
   }
 

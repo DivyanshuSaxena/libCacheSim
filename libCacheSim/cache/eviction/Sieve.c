@@ -56,7 +56,8 @@ cache_t *Sieve_init(const common_cache_params_t ccache_params,
   cache->to_evict = Sieve_to_evict;
 
   if (ccache_params.consider_obj_metadata) {
-    cache->obj_md_size = 1;
+    // one link (the hand evicts mid-queue) + visited bit
+    cache->obj_md_size = 8 + 1;
   } else {
     cache->obj_md_size = 0;
   }

@@ -75,6 +75,8 @@ static void _ARC_replace(cache_t *cache, const request_t *req);
 static cache_obj_t *_ARC_to_evict_miss_on_all_queues(cache_t *cache,
                                                      const request_t *req);
 static cache_obj_t *_ARC_to_replace(cache_t *cache, const request_t *req);
+static void _ARC_evict_L1_ghost(cache_t *cache, const request_t *req);
+static void _ARC_evict_L2_ghost(cache_t *cache, const request_t *req);
 
 /* debug functions */
 static void print_cache(cache_t *cache);
@@ -113,8 +115,9 @@ cache_t *ARC_init(const common_cache_params_t ccache_params,
   cache->get_n_obj = cache_get_n_obj_default;
 
   if (ccache_params.consider_obj_metadata) {
-    // two pointer + ghost metadata
-    cache->obj_md_size = 8 * 2 + 8 * 3;
+    // two links + list bit; B1/B2 ghosts: exact 8 B id + two links
+    cache->obj_md_size = 8 * 2 + 1;
+    cache->ghost_md_size = 8 + 8 * 2;
   } else {
     cache->obj_md_size = 0;
   }
@@ -261,6 +264,7 @@ static cache_obj_t *ARC_find(cache_t *cache, const request_t *req,
       remove_obj_from_list(&params->L2_ghost_head, &params->L2_ghost_tail, obj);
     }
 
+    cache->n_ghost -= 1;
     hashtable_delete(cache->hashtable, obj);
   } else {
     // cache hit, case I: x in L1_data or L2_data
@@ -362,6 +366,15 @@ static cache_obj_t *ARC_to_evict(cache_t *cache, const request_t *req) {
  */
 static void ARC_evict(cache_t *cache, const request_t *req) {
   ARC_params_t *params = (ARC_params_t *)(cache->eviction_params);
+  if (params->L1_data_size + params->L2_data_size == 0) {
+    // nothing resident: only ghost metadata is over budget
+    if (params->L2_ghost_size > 0) {
+      _ARC_evict_L2_ghost(cache, req);
+    } else if (params->L1_ghost_size > 0) {
+      _ARC_evict_L1_ghost(cache, req);
+    }
+    return;
+  }
   if (params->vtime_last_req_in_ghost == cache->n_req &&
       (params->curr_obj_in_L1_ghost || params->curr_obj_in_L2_ghost)) {
     _ARC_replace(cache, req);
@@ -400,6 +413,7 @@ static bool ARC_remove(cache_t *cache, obj_id_t obj_id) {
       params->L2_ghost_size -= obj->obj_size + cache->obj_md_size;
       remove_obj_from_list(&params->L2_ghost_head, &params->L2_ghost_tail, obj);
     }
+    cache->n_ghost -= 1;
   } else {
     if (obj->ARC.lru_id == 1) {
       params->L1_data_size -= obj->obj_size + cache->obj_md_size;
@@ -460,6 +474,7 @@ static void _ARC_evict_L1_data(cache_t *cache, const request_t *req) {
   remove_obj_from_list(&params->L1_data_head, &params->L1_data_tail, obj);
   prepend_obj_to_head(&params->L1_ghost_head, &params->L1_ghost_tail, obj);
   obj->ARC.ghost = true;
+  cache->n_ghost += 1;
 }
 
 static void _ARC_evict_L1_data_no_ghost(cache_t *cache, const request_t *req) {
@@ -489,6 +504,7 @@ static void _ARC_evict_L2_data(cache_t *cache, const request_t *req) {
   prepend_obj_to_head(&params->L2_ghost_head, &params->L2_ghost_tail, obj);
 
   obj->ARC.ghost = true;
+  cache->n_ghost += 1;
 
   cache_evict_base(cache, obj, false);
 }
@@ -501,6 +517,7 @@ static void _ARC_evict_L1_ghost(cache_t *cache, const request_t *req) {
   int64_t sz = obj->obj_size + cache->obj_md_size;
   params->L1_ghost_size -= sz;
   remove_obj_from_list(&params->L1_ghost_head, &params->L1_ghost_tail, obj);
+  cache->n_ghost -= 1;
   hashtable_delete(cache->hashtable, obj);
 }
 
@@ -512,6 +529,7 @@ static void _ARC_evict_L2_ghost(cache_t *cache, const request_t *req) {
   int64_t sz = obj->obj_size + cache->obj_md_size;
   params->L2_ghost_size -= sz;
   remove_obj_from_list(&params->L2_ghost_head, &params->L2_ghost_tail, obj);
+  cache->n_ghost -= 1;
   hashtable_delete(cache->hashtable, obj);
 }
 

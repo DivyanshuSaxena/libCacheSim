@@ -62,8 +62,8 @@ cache_t *FIFO_init(const common_cache_params_t ccache_params,
   cache->get_n_obj = cache_get_n_obj_default;
   cache->can_insert = cache_can_insert_default;
   if (ccache_params.consider_obj_metadata) {
-    // two pointer
-    cache->obj_md_size = 8 * 2;
+    // one ring-buffer slot
+    cache->obj_md_size = 8;
   } else {
     cache->obj_md_size = 0;
   }

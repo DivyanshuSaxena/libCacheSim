@@ -86,7 +86,7 @@ cache_t *LHD_init(const common_cache_params_t ccache_params,
       static_cast<cache_obj_t *>(malloc(sizeof(cache_obj_t)));
 
   if (ccache_params.consider_obj_metadata) {
-    cache->obj_md_size = 8 * 3 + 1;  // two age, one time stamp
+    cache->obj_md_size = 4 + 4 + 1;  // timestamp, last hit age, app class
   } else {
     cache->obj_md_size = 0;
   }
